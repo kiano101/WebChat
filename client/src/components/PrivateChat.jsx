@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { io } from 'socket.io-client';
+import { useSocket } from '../context/SocketContext';
 
 const PrivateChat = () => {
   const { username: recipient } = useParams();
-  const socketRef = useRef(null);
+  const socket = useSocket()
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState('');
   const navigate = useNavigate();
@@ -20,44 +20,39 @@ const PrivateChat = () => {
     return date.toLocaleString();
   };
 
+  const handlePrivateMessage = (data) => {
+    setMessages((prev) => [...prev,data])
+  }
+
+  const handlePrivateMessages = (messages) => {
+    console.log('Received privateMessages: ', messages)
+    setMessages(messages)
+  }
+
   useEffect(() => {
-    if (!socketRef.current) {
-      socketRef.current = io('http://localhost:5000', {
-        transports: ['websocket', 'polling'],
-      });
+    console.log("Emitting getPrivateMessageHistory event...");
 
-      socketRef.current.on('connect', () => {
-        console.log('Socket connected: ', socketRef.current.id);
-        socketRef.current.emit('joinPrivateChat', { sender: userName, recipient });
-      });
+    socket.emit('getPrivateMessageHistory', {sender: userName, recipient})
 
-      socketRef.current.on('privateMessage', (data) => {
-        setMessages((prev) => [...prev, data]);
-      });
-    }
+    socket.on('PrivateMessage', handlePrivateMessage)
 
-    socketRef.current.on('receivePrivateMessage', (data) => {
-        const { sender, message, timestamp } = data;
-        setMessages((prevMessages) => [...prevMessages, { sender, message, timestamp }]);
-      });
-      
+    socket.on('privateMessages', handlePrivateMessages)
 
     return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-        socketRef.current = null;
-      }
+      socket.off('PrivateMessage', handlePrivateMessage)
+      socket.off('privateMessages', handlePrivateMessages)
     };
-  }, [userName, recipient]);
+  }, [socket, userName, recipient]);
 
   const sendMessage = () => {
-    if (socketRef.current && message.trim()) {
+    if (message.trim()) {
       const data = { sender: userName, recipient, message, timestamp: new Date().toISOString() };
-      socketRef.current.emit('sendPrivateMessage', data);
-      setMessages((prev) => [...prev, data]);
+      socket.emit('sendPrivateMessage', data);
+      console.log('message sent')
       setMessage('');
     }
   };
+
 
   return (
     <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
@@ -70,7 +65,7 @@ const PrivateChat = () => {
         Chat with {recipient}
       </h2>
 
-      <div style={{ height: '300px', overflowY: 'scroll', border: '1px solid #ccc', padding: '10px' }}>
+      <div style={{ height: '300px', overflowY: 'scroll', border: '1px solid #ccc', padding: '10px', backgroundColor: 'white' }}>
         {messages.map((msg, index) => (
           <div key={index} style={{ marginBottom: '10px' }}>
             <strong>{msg.sender || 'User'}:</strong> {msg.message}{' '}

@@ -4,6 +4,8 @@ const {Server} = require('socket.io')
 const connectDB = require('./config/db')
 const cors = require('cors')
 const Message = require('./models/Message')
+const { on } = require('events')
+const { send } = require('process')
 
 const app = express()
 const server = http.createServer(app)
@@ -27,14 +29,14 @@ app.use(express.json())
 app.use('/api/auth', require('./routes/auth'))
 app.use('/api/chat', require('./routes/chat'))
 
-let onlineUsers = []
+let onlineUsers = new Map()
 
 io.on('connection', (socket) => {
     console.log("A user connected: ", socket.id)
 
     socket.on('join', (username) => {
-     onlineUsers[socket.id] = username
-     io.emit('updateUsers', Object.values(onlineUsers))
+     onlineUsers.set(socket.id, username)
+     io.emit('updateUsers', Array.from(onlineUsers.values()))
      console.log(`${username} joined the chat`)
      console.log(`All online users: `, onlineUsers)
     });
@@ -54,30 +56,24 @@ io.on('connection', (socket) => {
         }
     })
 
-    socket.on('privateMessage', async ({ sender, receiverId, message }) => {
-        socket.to(receiverId).emit('receivePrivateMessage', { sender, message, timestamp });
-    
+    socket.on('sendPrivateMessage', async ({ sender, recipient, message }) => {
+        const recipientSocketId = [...onlineUsers.entries()].find(([_, username]) => username === recipient)?.[0];
+        const newMessage = {sender, recipient, message, timestamp: new Date().toISOString()}
+
+        if (recipientSocketId) {
+            io.to(recipientSocketId).emit('PrivateMessage', newMessage)
+        }
+
+        socket.emit('PrivateMessage', newMessage)
+
         try {
-            const newMessage = new Message({ sender, receiver: receiverId, message });
-            await newMessage.save();
+            const savedMessage = new Message({sender, receiver: recipient, message})
+            await savedMessage.save()
+            console.log('Message saved successfully')
         } catch (error) {
-            console.error('Error saving private message: ', error);
+            console.error('Error saving private message: ', error)
         }
     });
-
-    socket.on('initiatePrivateChat', ({to, from}) => {
-        const recipientSocket = Object.keys(onlineUsers).find(
-            (key) => onlineUsers[key] === to
-        )
-        if (recipientSocket) {
-            io.to(recipientSocket).emit('privateMessage', {
-                from,
-                message: `Private chat initiated by ${from}`
-            })
-            console.log(`Private chat initiated from : ${from}, to : ${to}`)
-        }
-    })
-    
 
     socket.on('getMessageHistory', async () => {
         try {
@@ -88,12 +84,34 @@ io.on('connection', (socket) => {
             socket.emit('error', { message: 'Failed to retrieve message history.' });
         }
     });
+
+    socket.on('getPrivateMessageHistory', async ({ sender, recipient }) => {
+        try {
+            console.log("Fetching private messages for:", { sender, recipient });
+            const messages = await Message.find({
+                public: false,
+                $or: [
+                    { sender, recipient },
+                    { sender: recipient, recipient: sender },
+                ],
+            }).sort({ timestamp: 1 });
+            if (messages.length === 0 ){
+                console.warn('No messages found in the database for the users')
+            }
+            socket.emit('privateMessages', messages);
+            console.log('messages fetched from the database')
+        } catch (error) {
+            console.error('Error fetching private messages:', error);
+            socket.emit('error', { message: 'Failed to retrieve private messages.' });
+        }
+    });
     
 
+    
     socket.on('disconnect', () => {
-        const username = onlineUsers[socket.id]
-        delete onlineUsers[socket.id]
-        io.emit('updateUsers', Object.values(onlineUsers))
+        const username = onlineUsers.get(socket.id)
+        onlineUsers.delete(socket.id)
+        io.emit('updateUsers', Array.from(onlineUsers.values()))
         console.log(`${username} disconnected`)
         console.log(`All online users: `, onlineUsers)
     })

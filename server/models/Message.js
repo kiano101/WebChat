@@ -4,7 +4,7 @@ const messageSchema = new mongoose.Schema({
     receiver: {type: String},
     message: {type: String, required: true},
     timestamp: {type: Date, default: Date.now},
-    public: {type: Boolean}
+    public: {type: Boolean, default: false}
 })
 
 module.exports = mongoose.model("Message", messageSchema)

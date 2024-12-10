@@ -1,35 +1,22 @@
-// SocketContext.jsx
+import React, { createContext, useContext } from 'react';
+import { getSocket } from '../services/socket';
 
-import React, { createContext, useContext, useRef, useEffect } from 'react';
-import { io } from 'socket.io-client';
-
-const SocketContext = createContext();
+const SocketContext = createContext(null);
 
 export const SocketProvider = ({ children }) => {
-    const socketRef = useRef(null);
+  const socket = getSocket();
 
-    useEffect(() => {
-
-        if (!socketRef.current) {
-            socketRef.current = io('http://localhost:5000', {
-                transports: ['websocket', 'polling'],
-            });
-        }
-        return () => {
-        };
-    }, []);
-
-    return (
-        <SocketContext.Provider value={socketRef.current}>
-            {children}
-        </SocketContext.Provider>
-    );
+  return (
+    <SocketContext.Provider value={socket}>
+      {children}
+    </SocketContext.Provider>
+  );
 };
 
 export const useSocket = () => {
-    const socket = useContext(SocketContext);
-    if (!socket) {
-        throw new Error('useSocket must be used within a SocketProvider');
-    }
-    return socket;
+  const context = useContext(SocketContext);
+  if (!context) {
+    throw new Error('useSocket must be used within a SocketProvider');
+  }
+  return context;
 };

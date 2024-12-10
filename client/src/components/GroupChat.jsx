@@ -1,10 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {io} from 'socket.io-client'
+import { useSocket } from '../context/SocketContext';
 
 
 const GroupChat = () => {
-    const socketRef = useRef(null)
+    const socket = useSocket()
     const [messages, setMessages] = useState([])
     const [message, setMessage] = useState('')
     const [users, setUsers] = useState([])
@@ -21,63 +21,85 @@ const GroupChat = () => {
       return date.toLocaleString();
     };
 
+    const checkSocketConnection = () => {
+      if (!socket || !socket.connected) {
+        console.error('Socket is not connected!')
+        return false
+      }
+      return true
+    }
+
+    const updateUsersHandler = useCallback((onlineUsers) => {
+      const filteredUsers = onlineUsers.filter((user) => user !== username);
+      setUsers(filteredUsers);
+    }, [username]);
+  
+    const groupMessageHandler = useCallback((data) => {
+      setMessages((prev) => [...prev, data]);
+    }, []);
+  
+    const messageHistoryHandler = useCallback((history) => {
+      setMessages(history);
+    }, []);
+
 
     useEffect(() => {
-        if (!socketRef.current) {
-            socketRef.current = io('http://localhost:5000', {
-                transports: ['websocket', 'polling'],
-            });
+      console.log('Socket is being initialized')
+      if (!checkSocketConnection()) return;
 
-            socketRef.current.on('connect', () => {
-                console.log('Socket connected: ', socketRef.current.id);
-                socketRef.current.emit('join', username);
-                socketRef.current.emit('getMessageHistory')
-            });
+      socket.emit('join', username)
+      console.log('Socket connected: ', socket.id)
+      socket.emit('getMessageHistory')
 
-            socketRef.current.on('updateUsers', (onlineUsers) => {
-              const filteredUsers = onlineUsers.filter((user) => user !== username)
-                setUsers(filteredUsers);
-            });
+      socket.on('updateUsers', updateUsersHandler)
 
-            socketRef.current.on('groupMessage', (data) => {
-              setMessages((prev) => [...prev, data]);
-          });
+      socket.on('groupMessage', groupMessageHandler)
 
-          socketRef.current.on('messageHistory', (history) => {
-              setMessages(history);
-          });
-        }
+      socket.on('messageHistory', messageHistoryHandler)
 
         return () => {
-            if (socketRef.current) {
-                socketRef.current.disconnect();
-                socketRef.current = null
-            }
+            socket.off('updateUsers', updateUsersHandler)
+            socket.off('groupMessage', groupMessageHandler)
+            socket.off('messageHistory', messageHistoryHandler)
         };
-    }, [username]);
+    }, [socket, username, updateUsersHandler, groupMessageHandler, messageHistoryHandler]);
 
     const sendMessage = () => {
-      if (socketRef.current && message.trim()) {
+      if (!checkSocketConnection()) return;
+
+      if (message.trim()) {
           const data = { sender: username, message, timestamp: new Date().toISOString() };
-          socketRef.current.emit('sendMessage', data);
+          socket.emit('sendMessage', data);
           setMessage('');
       }
   };
 
   const handlePrivateChat = (user) => {
     console.log(`Initiating private chat with ${user}`)
-    socketRef.current.emit('initiatePrivateChat', {to: user, from: username})
     navigate(`/private-chat/${user}`)
   }
 
+  const handleLogout = () => {
+    socket.disconnect();
+    navigate('/login');
+  };
+  
+
     return (
         <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
-          <h2
-          onClick={() => navigate('/login')}
-          style={{
-            cursor: 'pointer'
-          }}
-          >
+          <h2>
+            <img
+              src='/exit.png'
+              alt='Logout'
+              onClick={handleLogout}
+              style={{
+                cursor: 'pointer',
+                width: '24px',
+                height: '24px',
+                marginRight: '20px'
+              }}
+              title='Logout'
+          />
             Group Chat
           </h2>
 
