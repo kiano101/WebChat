@@ -26,6 +26,12 @@ const Login = () => {
             alert('Login failed! check your credentials.')
         }
     }
+
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            handleSubmit()
+        }
+    }
     
     return (
         <div>
@@ -43,6 +49,7 @@ const Login = () => {
                     placeholder='Password'
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    onKeyDown={handleKeyDown}
                 />
                 <button type='submit'>Login</button>
                 <button type='button' onClick={gotToRegister}>Register</button>

@@ -84,6 +84,11 @@ const GroupChat = () => {
     navigate('/login');
   };
   
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+        sendMessage()
+    }
+}
 
     return (
         <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
@@ -146,6 +151,7 @@ const GroupChat = () => {
               onChange={(e) => setMessage(e.target.value)}
               placeholder="Type a message..."
               style={{ width: '100%', padding: '10px', borderRadius: '4px' }}
+              onKeyDown={handleKeyDown}
             />
             <button
               onClick={sendMessage}

@@ -33,6 +33,12 @@ const Register = () => {
         }
     }
 
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            handleSubmit()
+        }
+    }
+
     return (
         <div>
             <h2>Register</h2>
@@ -61,6 +67,7 @@ const Register = () => {
                     value={formData.password}
                     onChange={handleChange}
                     required
+                    onKeyDown={handleKeyDown}
                 />
                 <button type='submit'>Register</button>
                 <button type='buttons' onClick={goToLogin}>Login</button>

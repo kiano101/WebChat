@@ -91,8 +91,8 @@ io.on('connection', (socket) => {
             const messages = await Message.find({
                 public: false,
                 $or: [
-                    { sender, recipient },
-                    { sender: recipient, recipient: sender },
+                    { sender: sender, receiver: recipient },
+                    { sender: recipient, receiver: sender },
                 ],
             }).sort({ timestamp: 1 });
             if (messages.length === 0 ){
