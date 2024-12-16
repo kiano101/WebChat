@@ -1,13 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
+import BootstrapAlert from './Alert'
+
 
 const PrivateChat = () => {
   const { username: recipient } = useParams();
   const socket = useSocket()
   const [messages, setMessages] = useState([]);
+  const [showAlert, setShowAlert] = useState(null)
   const [message, setMessage] = useState('');
   const navigate = useNavigate();
+  const messageEndRef = useRef(null)
 
   const userName = localStorage.getItem('username');
   if (!userName) {
@@ -44,6 +48,10 @@ const PrivateChat = () => {
     };
   }, [socket, userName, recipient]);
 
+  useEffect(() => {
+    messageEndRef.current?.scrollIntoView({ behavior: 'smooth'})
+  }, [messages])
+
   const sendMessage = () => {
     if (message.trim()) {
       const data = { sender: userName, recipient, message, timestamp: new Date().toISOString() };
@@ -62,6 +70,14 @@ const PrivateChat = () => {
 
   return (
     <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
+      {showAlert && (
+                <BootstrapAlert 
+                    message={showAlert.message}
+                    variant={showAlert.variant}
+                    duration={3000} 
+                    onClose={() => setShowAlert(null)} 
+                />
+            )}
       <h2
         onClick={() => navigate('/group-chat')}
         style={{
@@ -80,6 +96,7 @@ const PrivateChat = () => {
             </span>
           </div>
         ))}
+        <div ref={messageEndRef} />
       </div>
 
       <div style={{ marginTop: '10px' }}>
@@ -93,6 +110,7 @@ const PrivateChat = () => {
         />
         <button
           onClick={sendMessage}
+          className='custom-btn'
           style={{
             marginTop: '10px',
             width: '100%',

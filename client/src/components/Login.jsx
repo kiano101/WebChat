@@ -1,11 +1,13 @@
 import React, { useState, useContext } from 'react'
 import axios from 'axios'
-import {useNavigate, Link} from 'react-router-dom'
+import {useNavigate} from 'react-router-dom'
 import AuthContext from '../context/AuthContext'
+import BootstrapAlert from './Alert'
 
 const Login = () => {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
+    const [showAlert, setShowAlert] = useState(null)
     const {login} = useContext(AuthContext)
     const navigate = useNavigate()
 
@@ -21,22 +23,33 @@ const Login = () => {
             login({token, username});
             localStorage.setItem('token', token)
             localStorage.setItem('username', username)
-            navigate('/group-chat')
+            setShowAlert({message: 'Welcome Back!', variant: 'success'})
+            setTimeout(() => {
+                navigate('/group-chat')
+            }, 750)
         } catch (error) {
-            alert('Login failed! check your credentials.')
+            setShowAlert({message: 'Login failed! Check your credentials.', variant: 'danger'})
         }
     }
 
     const handleKeyDown = (e) => {
         if (e.key === 'Enter') {
-            handleSubmit()
+            handleSubmit(e)
         }
     }
     
     return (
         <div>
+            {showAlert && (
+                <BootstrapAlert 
+                    message={showAlert.message}
+                    variant={showAlert.variant}
+                    duration={500} 
+                    onClose={() => setShowAlert(null)} 
+                />
+            )}
             <h2>Login</h2>
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} className='custom-form'>
                 <input
                     type='email'
                     placeholder='Email'
@@ -51,8 +64,8 @@ const Login = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     onKeyDown={handleKeyDown}
                 />
-                <button type='submit'>Login</button>
-                <button type='button' onClick={gotToRegister}>Register</button>
+                <button type='submit' className='custom-btn'>Login</button>
+                <button type='button' className='custom-btn' onClick={gotToRegister}>Register</button>
             </form>
         </div>
     )

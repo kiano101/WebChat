@@ -1,4 +1,3 @@
-
 /* --- GLOBAL STYLES --- */
 :root {
   --primary-color: #007bff;
@@ -24,7 +23,7 @@ body {
 }
 
 /* Center content globally */
-.container {
+.custom-container {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -35,7 +34,7 @@ body {
 }
 
 /* --- FORM STYLES --- */
-form {
+.custom-form {
   background: var(--light-color);
   padding: var(--padding);
   border-radius: var(--border-radius);
@@ -58,7 +57,7 @@ textarea {
   box-sizing: border-box;
 }
 
-button {
+button.custom-btn {
   width: 100%;
   padding: 0.5rem;
   font-size: 1rem;
@@ -71,7 +70,7 @@ button {
   margin-top: 20px;
 }
 
-button:hover {
+button.custom-btn:hover {
   background-color: var(--secondary-color);
 }
 
@@ -82,7 +81,7 @@ input:focus {
 }
 
 /* --- MESSAGE BOXES --- */
-.message-box {
+.custom-message-box {
   background-color: white;
   padding: var(--padding);
   border-radius: var(--border-radius);
@@ -90,32 +89,32 @@ input:focus {
   margin-bottom: var(--margin);
 }
 
-.message-box.sender {
+.custom-message-box.sender {
   background-color: var(--success-color);
   color: var(--light-color);
   align-self: flex-start;
 }
 
-.message-box.receiver {
+.custom-message-box.receiver {
   background-color: var(--secondary-color);
   color: var(--light-color);
   align-self: flex-end;
 }
 
 /* --- UTILITY CLASSES --- */
-.text-center {
+.custom-text-center {
   text-align: center;
 }
 
-.mt-1 {
+.custom-mt-1 {
   margin-top: 0.5rem;
 }
 
-.mb-2 {
+.custom-mb-2 {
   margin-bottom: 1rem;
 }
 
-.p-2 {
+.custom-p-2 {
   padding: 1rem;
 }
 
@@ -125,4 +124,44 @@ h2 {
   padding: 2rem;
   font-size: 1.5rem;
   color: black;
+}
+
+/* --- Alert Styles --- */
+.custom-alert {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 15px 30px;
+  border-radius: 8px;
+  font-size: 1rem;
+  color: #212529;
+  background-color: #f8f9fa;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+  z-index: 9999;
+}
+
+.custom-alert.show {
+  opacity: 1;
+}
+
+.custom-alert.success {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.custom-alert.danger {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.custom-alert.warning {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.custom-alert.info {
+  background-color: #d1ecf1;
+  color: #0c5460;
 }

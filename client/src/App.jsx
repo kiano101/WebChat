@@ -6,6 +6,7 @@ import GroupChat from './components/GroupChat'
 import ProtectedRoute from './components/ProtectedRoute'
 import PrivateChat from './components/PrivateChat'
 import './styles/styles.css'
+import 'bootstrap/dist/css/bootstrap.min.css'
 
 
 const App = () => {

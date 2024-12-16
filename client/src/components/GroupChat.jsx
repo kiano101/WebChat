@@ -1,14 +1,17 @@
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useEffect, useCallback, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
-
+import BootstrapAlert from './Alert'
 
 const GroupChat = () => {
     const socket = useSocket()
     const [messages, setMessages] = useState([])
     const [message, setMessage] = useState('')
     const [users, setUsers] = useState([])
+    const [showAlert, setShowAlert] = useState(null)
+    const [incomingMessage, setIncomingMessage] = useState(null)
     const navigate = useNavigate();
+    const messageEndRef = useRef(null)
 
     const username = localStorage.getItem('username');
     if (!username) {
@@ -36,6 +39,13 @@ const GroupChat = () => {
   
     const groupMessageHandler = useCallback((data) => {
       setMessages((prev) => [...prev, data]);
+      setIncomingMessage(data)
+      const truncatedMessage = data.message.length > 50 ? `${data.message.slice(0, 50)}...` : data.message;
+      setShowAlert({
+        message: `New Group Message from ${data.sender}: ${truncatedMessage}`,
+        variant: 'info'
+      })
+      setTimeout(() => setShowAlert(null), 500)
     }, []);
   
     const messageHistoryHandler = useCallback((history) => {
@@ -64,6 +74,10 @@ const GroupChat = () => {
         };
     }, [socket, username, updateUsersHandler, groupMessageHandler, messageHistoryHandler]);
 
+    useEffect(() => {
+      messageEndRef.current?.scrollIntoView({ behavior: 'smooth'})
+    }, [messages])
+
     const sendMessage = () => {
       if (!checkSocketConnection()) return;
 
@@ -81,6 +95,8 @@ const GroupChat = () => {
 
   const handleLogout = () => {
     socket.disconnect();
+    localStorage.removeItem('token')
+    localStorage.removeItem('username')
     navigate('/login');
   };
   
@@ -92,6 +108,14 @@ const GroupChat = () => {
 
     return (
         <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
+          {showAlert && (
+                <BootstrapAlert 
+                    message={showAlert.message}
+                    variant={showAlert.variant}
+                    duration={5000} 
+                    onClose={() => setShowAlert(null)} 
+                />
+            )}
           <h2>
             <img
               src='/exit.png'
@@ -142,6 +166,7 @@ const GroupChat = () => {
                 </span>
               </div>
             ))}
+            <div ref={messageEndRef} />
           </div>
 
           <div style={{ marginTop: '10px' }}>
@@ -155,6 +180,7 @@ const GroupChat = () => {
             />
             <button
               onClick={sendMessage}
+              className='custom-btn'
               style={{
                 marginTop: '10px',
                 width: '100%',
