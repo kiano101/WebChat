@@ -4,7 +4,7 @@ import { useSocket } from '../context/SocketContext';
 import BootstrapAlert from './Alert'
 
 const GroupChat = () => {
-    const socket = useSocket()
+    const {socket, reconnectSocket} = useSocket()
     const [messages, setMessages] = useState([])
     const [message, setMessage] = useState('')
     const [users, setUsers] = useState([])
@@ -15,8 +15,8 @@ const GroupChat = () => {
 
     const username = localStorage.getItem('username');
     if (!username) {
-      console.error('Username is missing!');
-      return;
+      console.log('Username is missing!');
+      return null;
     }
 
     const formatTimestamp = (timestamp) => {
@@ -24,13 +24,13 @@ const GroupChat = () => {
       return date.toLocaleString();
     };
 
-    const checkSocketConnection = () => {
-      if (!socket || !socket.connected) {
-        console.error('Socket is not connected!')
-        return false
-      }
-      return true
+    const privateNotifications = (data) => {
+      setShowAlert({
+        message: `New Private Message from ${data.sender}`,
+        variant: 'info'
+      })
     }
+ 
 
     const updateUsersHandler = useCallback((onlineUsers) => {
       const filteredUsers = onlineUsers.filter((user) => user !== username);
@@ -54,8 +54,10 @@ const GroupChat = () => {
 
 
     useEffect(() => {
-      console.log('Socket is being initialized')
-      if (!checkSocketConnection()) return;
+      if (!socket) {
+        reconnectSocket()
+        return;
+      }
 
       socket.emit('join', username)
       console.log('Socket connected: ', socket.id)
@@ -67,10 +69,18 @@ const GroupChat = () => {
 
       socket.on('messageHistory', messageHistoryHandler)
 
+      socket.on('PrivateMessage', (data) => {
+        setShowAlert({
+          message: `New Private Message from ${data.sender}`,
+          variant: 'info'
+        })
+      })
+
         return () => {
             socket.off('updateUsers', updateUsersHandler)
             socket.off('groupMessage', groupMessageHandler)
             socket.off('messageHistory', messageHistoryHandler)
+            socket.off('PrivateMessage')
         };
     }, [socket, username, updateUsersHandler, groupMessageHandler, messageHistoryHandler]);
 
@@ -79,7 +89,6 @@ const GroupChat = () => {
     }, [messages])
 
     const sendMessage = () => {
-      if (!checkSocketConnection()) return;
 
       if (message.trim()) {
           const data = { sender: username, message, timestamp: new Date().toISOString() };
@@ -104,6 +113,10 @@ const GroupChat = () => {
     if (e.key === 'Enter') {
         sendMessage()
     }
+}
+
+if (!socket) {
+  return <div>Connecting to the chat...</div>
 }
 
     return (
@@ -138,11 +151,10 @@ const GroupChat = () => {
                 users.map((user, index) => (
                   <button
                     key={index}
+                    className='custom-btn'
                     onClick={() => handlePrivateChat(user)}
                     style={{
                       display: 'block',
-                      padding: '10px',
-                      marginBottom: '5px',
                       borderRadius: '4px',
                       cursor: 'pointer',
                       width: '80px',

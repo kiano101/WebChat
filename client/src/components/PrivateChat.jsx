@@ -6,7 +6,7 @@ import BootstrapAlert from './Alert'
 
 const PrivateChat = () => {
   const { username: recipient } = useParams();
-  const socket = useSocket()
+  const {socket} = useSocket()
   const [messages, setMessages] = useState([]);
   const [showAlert, setShowAlert] = useState(null)
   const [message, setMessage] = useState('');
@@ -16,7 +16,7 @@ const PrivateChat = () => {
   const userName = localStorage.getItem('username');
   if (!userName) {
     console.error('Username is missing!');
-    return;
+    return null;
   }
 
   const formatTimestamp = (timestamp) => {
@@ -34,9 +34,21 @@ const PrivateChat = () => {
   }
 
   useEffect(() => {
+    if (!socket) {
+      console.warn('Socket not ready. Skipping event setup.');
+      return;
+    }
+
+    console.log("Socket: ", socket)
+
     console.log("Emitting getPrivateMessageHistory event...");
 
-    socket.emit('getPrivateMessageHistory', {sender: userName, recipient})
+    if (socket.connected) {
+      socket.emit("getPrivateMessageHistory", {sender: userName, recipient});
+    } else {
+      console.warn("Socket not ready. Waiting for connection...");
+    }
+    
 
     socket.on('PrivateMessage', handlePrivateMessage)
 
@@ -54,10 +66,14 @@ const PrivateChat = () => {
 
   const sendMessage = () => {
     if (message.trim()) {
-      const data = { sender: userName, recipient, message, timestamp: new Date().toISOString() };
+      if (socket && socket.connected) {
+        const data = { sender: userName, recipient, message, timestamp: new Date().toISOString() };
       socket.emit('sendPrivateMessage', data);
       console.log('message sent')
       setMessage('');
+      } else {
+        console.warn('Socket is not connected. Cannot send message.')
+      }
     }
   };
 

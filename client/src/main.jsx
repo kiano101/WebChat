@@ -7,10 +7,10 @@ import { SocketProvider } from './context/SocketContext.jsx';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <BrowserRouter>
-      <SocketProvider>
+    <SocketProvider>
+      <BrowserRouter>
         <App />
-      </SocketProvider>
-    </BrowserRouter>
+      </BrowserRouter>
+    </SocketProvider>
   </StrictMode>,
 );
